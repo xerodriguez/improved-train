@@ -1,0 +1,12 @@
+{
+    "name": "monorepo",
+    "private": true,
+    "workspaces": [
+        "ui",
+        "services/*"
+    ],
+    "devDependencies": {
+        "typescript": "^5.5.4",
+        "ts-node": "^10.9.2"
+    }
+}

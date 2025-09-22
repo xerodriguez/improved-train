@@ -1,0 +1,49 @@
+{
+    "id": "myrealm",
+    "realm": "myrealm",
+    "enabled": true,
+    "sslRequired": "external",
+    "roles": {
+        "realm": [
+            {
+                "name": "admin",
+                "description": "Admin role for full access"
+            }
+        ]
+    },
+    "users": [
+        {
+            "username": "admin",
+            "enabled": true,
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "admin",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "admin"
+            ]
+        }
+    ],
+    "clients": [
+        {
+            "clientId": "backend",
+            "name": "Backend Client",
+            "enabled": true,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "secret",
+            "redirectUris": [
+                "*"
+            ],
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "serviceAccountsEnabled": false,
+            "publicClient": false,
+            "protocol": "openid-connect"
+        }
+    ]
+}
