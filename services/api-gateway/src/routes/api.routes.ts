@@ -5,6 +5,13 @@ import { Response } from 'express';
 
 const router = Router();
 
+// Authentication routes - NO AUTHENTICATION REQUIRED
+// These routes are public and handle login/logout
+router.all('/auth*', async (req: AuthenticatedRequest, res: Response) => {
+    const authPath = req.path.replace('/auth', '/auth');
+    await serviceProxy.forwardRequest('auth', req, res, authPath);
+});
+
 // Products routes with authentication
 router.use('/products', authMiddleware.authenticate);
 

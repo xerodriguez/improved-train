@@ -44,6 +44,13 @@ export class ServiceProxy {
             timeout: 5000,
             retries: 3
         });
+
+        this.services.set('auth', {
+            name: 'auth',
+            baseUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3005',
+            timeout: 5000,
+            retries: 3
+        });
     }
 
     public async forwardRequest(

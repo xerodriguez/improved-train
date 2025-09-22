@@ -1,16 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import dotenv from 'dotenv';
-import apiRoutes from './routes/api.routes';
-import serviceProxy from './utils/service-proxy';
+import authRoutes from './routes/auth.routes';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 
 // Security middleware
 app.use(helmet({
@@ -27,23 +25,14 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));
 
 // Request parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Logging middleware
-app.use(morgan('combined', {
-    stream: {
-        write: (message: string) => {
-            console.log(`[${new Date().toISOString()}] ${message.trim()}`);
-        }
-    }
-}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Request ID middleware for tracing
 app.use((req, res, next) => {
@@ -54,47 +43,55 @@ app.use((req, res, next) => {
     next();
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-    try {
-        const serviceStatuses = await serviceProxy.getServiceStatus();
-        const allHealthy = serviceStatuses.every(service => service.status === 'healthy');
-
-        res.status(allHealthy ? 200 : 503).json({
-            status: allHealthy ? 'healthy' : 'degraded',
-            gateway: 'healthy',
-            services: serviceStatuses,
-            timestamp: new Date().toISOString(),
-            version: process.env.npm_package_version || '1.0.0'
-        });
-    } catch (error) {
-        console.error('Health check error:', error);
-        res.status(500).json({
-            status: 'unhealthy',
-            error: 'Failed to check service health',
-            timestamp: new Date().toISOString()
-        });
-    }
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - ${req.headers['x-request-id']}`);
+    next();
 });
 
-// Gateway information endpoint
-app.get('/info', (req, res) => {
-    res.json({
-        name: 'API Gateway',
-        version: process.env.npm_package_version || '1.0.0',
-        environment: process.env.NODE_ENV || 'development',
+// Main health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        service: 'auth-service',
         timestamp: new Date().toISOString(),
-        services: {
-            auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3005',
-            products: process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3002',
-            suppliers: process.env.SUPPLIERS_SERVICE_URL || 'http://localhost:3003',
-            users: process.env.USERS_SERVICE_URL || 'http://localhost:3004'
+        version: process.env.npm_package_version || '1.0.0',
+        keycloak: {
+            server: process.env.KEYCLOAK_SERVER_URL || 'http://localhost:8080',
+            realm: process.env.KEYCLOAK_REALM || 'myrealm'
         }
     });
 });
 
-// API routes with /api prefix
-app.use('/api', apiRoutes);
+// Service information endpoint
+app.get('/info', (req, res) => {
+    res.json({
+        name: 'Authentication Service',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+            login: 'POST /auth/login',
+            refresh: 'POST /auth/refresh',
+            logout: 'POST /auth/logout',
+            validate: 'GET /auth/validate',
+            health: 'GET /auth/health'
+        },
+        keycloak: {
+            server: process.env.KEYCLOAK_SERVER_URL || 'http://localhost:8080',
+            realm: process.env.KEYCLOAK_REALM || 'myrealm',
+            clientId: process.env.KEYCLOAK_CLIENT_ID || 'backend'
+        }
+    });
+});
+
+// Auth routes
+app.use('/auth', authRoutes);
+
+// Root redirect
+app.get('/', (req, res) => {
+    res.redirect('/info');
+});
 
 // 404 handler for unknown routes
 app.use('*', (req, res) => {
@@ -104,7 +101,8 @@ app.use('*', (req, res) => {
         error: 'Route not found',
         path: req.originalUrl,
         method: req.method,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: req.headers['x-request-id']
     });
 });
 
@@ -115,12 +113,14 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
         stack: error.stack,
         url: req.url,
         method: req.method,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestId: req.headers['x-request-id']
     });
 
     res.status(500).json({
         success: false,
-        error: 'Internal gateway error',
+        error: 'Internal server error',
+        message: 'An unexpected error occurred',
         requestId: req.headers['x-request-id'],
         timestamp: new Date().toISOString()
     });
@@ -139,11 +139,14 @@ process.on('SIGINT', () => {
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`🚀 API Gateway running on port ${PORT}`);
+    console.log(`🔐 Authentication Service running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`ℹ️  Gateway info: http://localhost:${PORT}/info`);
-    console.log(`🔗 API endpoints: http://localhost:${PORT}/api/*`);
-    console.log(`🔐 Authentication: Keycloak JWT tokens required`);
+    console.log(`ℹ️  Service info: http://localhost:${PORT}/info`);
+    console.log(`🔑 Login endpoint: http://localhost:${PORT}/auth/login`);
+    console.log(`🔄 Token refresh: http://localhost:${PORT}/auth/refresh`);
+    console.log(`🚪 Logout endpoint: http://localhost:${PORT}/auth/logout`);
+    console.log(`✅ Token validation: http://localhost:${PORT}/auth/validate`);
+    console.log(`🔗 Keycloak: ${process.env.KEYCLOAK_SERVER_URL || 'http://localhost:8080'}`);
 });
 
 export default app;
