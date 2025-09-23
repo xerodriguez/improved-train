@@ -88,12 +88,10 @@ const Products: React.FC = () => {
         navigate('/login');
     };
 
-    // Handle refresh
     const handleRefresh = () => {
         loadProducts();
     };
 
-    // Define DataGrid columns
     const columns: GridColDef[] = [
         {
             field: 'product_id',
@@ -193,21 +191,19 @@ const Products: React.FC = () => {
         },
     ];
 
-    // Prepare rows for DataGrid
     const rows: GridRowsProp = products.map(product => ({
         id: product.product_id,
         ...product,
     }));
 
     if (!isAuthenticated) {
-        return null; // Will redirect via useEffect
+        return null;
     }
 
     return (
         <Layout>
             <Box sx={{ flexGrow: 1 }}>
                 <Container maxWidth={false} sx={{ mt: 3, mb: 3 }}>
-                    {/* Stats Cards */}
                     <Box sx={{ mb: 3 }}>
                         <Card>
                             <CardContent>
@@ -235,7 +231,6 @@ const Products: React.FC = () => {
                         </Card>
                     </Box>
 
-                    {/* Error Alert */}
                     {error && (
                         <Alert
                             severity="error"
@@ -250,7 +245,6 @@ const Products: React.FC = () => {
                         </Alert>
                     )}
 
-                    {/* Products Table */}
                     <Paper sx={{ height: 600, width: '100%' }}>
                         <DataGrid
                             rows={rows}

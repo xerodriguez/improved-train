@@ -30,7 +30,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-// Public Route component (redirects to products if already authenticated)
 interface PublicRouteProps {
     children: React.ReactNode;
 }
@@ -54,7 +53,6 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
     return isAuthenticated ? <Navigate to="/products" replace /> : <>{children}</>;
 };
 
-// Main App Routes component
 const AppRoutes: React.FC = () => {
     return (
         <Routes>

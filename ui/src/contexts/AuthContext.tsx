@@ -178,10 +178,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 };
 
-// Custom hook to use auth context
 export const useAuth = (): AuthContextType => {
-    // const context = useContext(AuthContext);
     const context = {
+        // TODO: SOLVE KEYCLOAK hardcode token til solve keycloak
         user: { username: "Admin", token: "token", refreshToken: "token", expiresAt: Date.now() + 3600 * 1000 },
         isAuthenticated: true, isLoading: false, login: (username: string, password: string) => Promise.resolve(),
         logout: () => { },
@@ -196,7 +195,6 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
-// HOC for components that require authentication
 export const withAuth = <P extends object>(
     Component: React.ComponentType<P>
 ): React.FC<P> => {
