@@ -106,4 +106,71 @@ export class ProductService {
             };
         }
     }
+
+    async createProduct(product: Product): Promise<ApiResponse<Product>> {
+        try {
+            const newProduct = await this.productRepository.createProduct(product);
+            return {
+                success: true,
+                data: newProduct,
+                message: 'Product created successfully'
+            };
+        } catch (error) {
+            console.error('Service error in createProduct:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred'
+            };
+        }
+    }
+
+    async updateProduct(productId: number, product: Partial<Product>): Promise<ApiResponse<Product>> {
+        try {
+            const updatedProduct = await this.productRepository.updateProduct(productId, product);
+
+            if (!updatedProduct) {
+                return {
+                    success: false,
+                    error: `Product with ID ${productId} not found`
+                };
+            }
+
+            return {
+                success: true,
+                data: updatedProduct,
+                message: 'Product updated successfully'
+            };
+        } catch (error) {
+            console.error('Service error in updateProduct:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred'
+            };
+        }
+    }
+
+    async deleteProduct(productId: number): Promise<ApiResponse<null>> {
+        try {
+            const isDeleted = await this.productRepository.deleteProduct(productId);
+
+            if (!isDeleted) {
+                return {
+                    success: false,
+                    error: `Product with ID ${productId} not found`
+                };
+            }
+
+            return {
+                success: true,
+                data: null,
+                message: 'Product deleted successfully'
+            };
+        } catch (error) {
+            console.error('Service error in deleteProduct:', error);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred'
+            };
+        }
+    }
 }

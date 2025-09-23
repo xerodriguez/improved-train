@@ -28,21 +28,5 @@
         "ts-jest": "^29.1.2",
         "ts-node": "^10.9.2",
         "typescript": "^5.5.4"
-    },
-    "jest": {
-        "preset": "ts-jest",
-        "testEnvironment": "node",
-        "roots": [
-            "<rootDir>/src"
-        ],
-        "testMatch": [
-            "**/__tests__/**/*.ts",
-            "**/?(*.)+(spec|test).ts"
-        ],
-        "collectCoverageFrom": [
-            "src/**/*.ts",
-            "!src/**/*.d.ts",
-            "!src/index.ts"
-        ]
     }
 }

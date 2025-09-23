@@ -20,7 +20,7 @@ export class KeycloakClient {
      */
     async authenticate(username: string, password: string): Promise<LoginResponse> {
         try {
-            const tokenUrl = `${this.config.serverUrl}/realms/${this.config.realm}/protocol/openid-connect/token`;
+            const tokenUrl = `${this.config.serverUrl}/auth/realms/${this.config.realm}/protocol/openid-connect/token`;
 
             const requestData = new URLSearchParams({
                 grant_type: 'password',

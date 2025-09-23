@@ -122,4 +122,80 @@ export class ProductController {
             });
         }
     };
+
+    public createProduct = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const product = req.body;
+            const result = await this.productService.createProduct(product);
+
+            if (result.success) {
+                res.status(201).json(result);
+            } else {
+                res.status(400).json(result);
+            }
+        } catch (error) {
+            console.error('Controller error in createProduct:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    };
+
+    public updateProduct = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const productId = parseInt(req.params.id, 10);
+            const product = req.body;
+
+            if (isNaN(productId)) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Invalid product ID format'
+                });
+                return;
+            }
+
+            const result = await this.productService.updateProduct(productId, product);
+
+            if (result.success) {
+                res.status(200).json(result);
+            } else {
+                res.status(404).json(result);
+            }
+        } catch (error) {
+            console.error('Controller error in updateProduct:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    };
+
+    public deleteProduct = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const productId = parseInt(req.params.id, 10);
+
+            if (isNaN(productId)) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Invalid product ID format'
+                });
+                return;
+            }
+
+            const result = await this.productService.deleteProduct(productId);
+
+            if (result.success) {
+                res.status(200).json(result);
+            } else {
+                res.status(404).json(result);
+            }
+        } catch (error) {
+            console.error('Controller error in deleteProduct:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    };
 }

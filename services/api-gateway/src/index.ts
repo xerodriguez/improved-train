@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/api.routes';
@@ -12,31 +11,56 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
-        },
-    },
-}));
-
 // CORS configuration
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Accept-Version',
+        'Content-Length',
+        'Content-MD5',
+        'Date',
+        'X-Api-Version',
+        'X-Request-ID',
+        'X-CSRF-Token'
+    ],
+    exposedHeaders: [
+        'X-Request-ID',
+        'X-Response-Time',
+        'X-Rate-Limit-Limit',
+        'X-Rate-Limit-Remaining',
+        'X-Rate-Limit-Reset'
+    ],
+    credentials: false, // Set to false when origin is '*'
+    maxAge: 86400, // 24 hours preflight cache
+    preflightContinue: false,
+    optionsSuccessStatus: 200
 }));
 
-// Request parsing middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS,HEAD');
+    res.header('Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-API-Key, X-Request-ID'
+    );
+    res.header('Access-Control-Expose-Headers',
+        'X-Request-ID, X-Response-Time, X-Rate-Limit-Limit, X-Rate-Limit-Remaining'
+    );
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Max-Age', '86400'); // 24 hours
+        return res.status(200).end();
+    }
+
+    next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
 app.use(morgan('combined', {
     stream: {
         write: (message: string) => {
@@ -53,6 +77,7 @@ app.use((req, res, next) => {
     res.setHeader('x-request-id', requestId);
     next();
 });
+
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -72,6 +97,82 @@ app.get('/health', async (req, res) => {
         res.status(500).json({
             status: 'unhealthy',
             error: 'Failed to check service health',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// CORS test endpoint
+app.get('/cors-test', (req, res) => {
+    res.json({
+        message: 'CORS is working correctly!',
+        origin: req.headers.origin || 'No origin header',
+        userAgent: req.headers['user-agent'] || 'No user agent',
+        method: req.method,
+        headers: {
+            'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+            'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+            'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers'),
+        },
+        timestamp: new Date().toISOString(),
+        requestId: req.headers['x-request-id']
+    });
+});
+
+// Keycloak connection test endpoint
+app.get('/auth-test', async (req, res) => {
+    try {
+        const keycloakUrl = process.env.KEYCLOAK_SERVER_URL || 'http://localhost:8080';
+        const realm = process.env.KEYCLOAK_REALM || 'myrealm';
+
+        // Test Keycloak well-known endpoint
+        const wellKnownUrl = `${keycloakUrl}/realms/${realm}/.well-known/openid_configuration`;
+        const jwksUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/certs`;
+
+        const tests = {
+            keycloak_reachable: false,
+            jwks_reachable: false,
+            realm_exists: false,
+            config: null,
+            keys: null
+        };
+
+        try {
+            const configResponse = await fetch(wellKnownUrl);
+            if (configResponse.ok) {
+                tests.keycloak_reachable = true;
+                tests.realm_exists = true;
+                tests.config = await configResponse.json();
+            }
+        } catch (error) {
+            console.log('Keycloak config test failed:', error);
+        }
+
+        try {
+            const jwksResponse = await fetch(jwksUrl);
+            if (jwksResponse.ok) {
+                tests.jwks_reachable = true;
+                tests.keys = await jwksResponse.json();
+            }
+        } catch (error) {
+            console.log('JWKS test failed:', error);
+        }
+
+        res.json({
+            message: 'Authentication service test results',
+            keycloak: {
+                url: keycloakUrl,
+                realm: realm,
+                wellKnownUrl: wellKnownUrl,
+                jwksUrl: jwksUrl
+            },
+            tests: tests,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: 'Auth test failed',
+            message: error instanceof Error ? error.message : 'Unknown error',
             timestamp: new Date().toISOString()
         });
     }

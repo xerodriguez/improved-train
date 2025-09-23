@@ -40,9 +40,6 @@ export class AuthService {
         return await this.keycloakClient.authenticate(username.trim(), password);
     }
 
-    /**
-     * Refresh access token using refresh token
-     */
     async refreshToken(refreshToken: string): Promise<LoginResponse> {
         if (!refreshToken || refreshToken.trim().length === 0) {
             return {
@@ -55,9 +52,6 @@ export class AuthService {
         return await this.keycloakClient.refreshToken(refreshToken.trim());
     }
 
-    /**
-     * Validate JWT token
-     */
     async validateToken(token: string): Promise<any> {
         if (!token || token.trim().length === 0) {
             throw new Error('Token is required');
@@ -66,9 +60,6 @@ export class AuthService {
         return await this.keycloakClient.introspectToken(token.trim());
     }
 
-    /**
-     * Logout user by invalidating refresh token
-     */
     async logout(refreshToken: string): Promise<boolean> {
         if (!refreshToken || refreshToken.trim().length === 0) {
             return false;
@@ -77,9 +68,6 @@ export class AuthService {
         return await this.keycloakClient.logout(refreshToken.trim());
     }
 
-    /**
-     * Check if Keycloak server is available
-     */
     async healthCheck(): Promise<boolean> {
         return await this.keycloakClient.healthCheck();
     }

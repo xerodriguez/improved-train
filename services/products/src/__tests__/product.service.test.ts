@@ -131,4 +131,112 @@ describe('ProductService', () => {
             expect(result.error).toBe('Invalid supplier ID provided');
         });
     });
+
+    describe('createProduct', () => {
+        it('should create a new product successfully', async () => {
+            const newProduct: Product = {
+                product_id: 0,
+                product_name: 'New Product',
+                supplier_id: 1,
+                category_id: 1,
+                quantity_per_unit: '10 boxes',
+                unit_price: 20,
+                units_in_stock: 50,
+                units_on_order: 10,
+                reorder_level: 5,
+                discontinued: 0
+            };
+
+            const createdProduct: Product = { ...newProduct, product_id: 1 };
+
+            mockProductRepository.createProduct.mockResolvedValueOnce(createdProduct);
+
+            const result = await productService.createProduct(newProduct);
+
+            expect(result.success).toBe(true);
+            expect(result.data).toEqual(createdProduct);
+            expect(result.message).toBe('Product created successfully');
+        });
+
+        it('should handle errors during product creation', async () => {
+            mockProductRepository.createProduct.mockRejectedValueOnce(new Error('Database error'));
+
+            const result = await productService.createProduct({} as Product);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Database error');
+        });
+    });
+
+    describe('updateProduct', () => {
+        it('should update an existing product successfully', async () => {
+            const updatedProduct: Product = {
+                product_id: 1,
+                product_name: 'Updated Product',
+                supplier_id: 1,
+                category_id: 1,
+                quantity_per_unit: '10 boxes',
+                unit_price: 25,
+                units_in_stock: 40,
+                units_on_order: 5,
+                reorder_level: 3,
+                discontinued: 0
+            };
+
+            mockProductRepository.updateProduct.mockResolvedValueOnce(updatedProduct);
+
+            const result = await productService.updateProduct(1, updatedProduct);
+
+            expect(result.success).toBe(true);
+            expect(result.data).toEqual(updatedProduct);
+            expect(result.message).toBe('Product updated successfully');
+        });
+
+        it('should return an error if product is not found', async () => {
+            mockProductRepository.updateProduct.mockResolvedValueOnce(null);
+
+            const result = await productService.updateProduct(999, {});
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Product with ID 999 not found');
+        });
+
+        it('should handle errors during product update', async () => {
+            mockProductRepository.updateProduct.mockRejectedValueOnce(new Error('Database error'));
+
+            const result = await productService.updateProduct(1, {});
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Database error');
+        });
+    });
+
+    describe('deleteProduct', () => {
+        it('should delete a product successfully', async () => {
+            mockProductRepository.deleteProduct.mockResolvedValueOnce(true);
+
+            const result = await productService.deleteProduct(1);
+
+            expect(result.success).toBe(true);
+            expect(result.message).toBe('Product deleted successfully');
+        });
+
+        it('should return an error if product is not found', async () => {
+            mockProductRepository.deleteProduct.mockResolvedValueOnce(false);
+
+            const result = await productService.deleteProduct(999);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Product with ID 999 not found');
+        });
+
+        it('should handle errors during product deletion', async () => {
+            mockProductRepository.deleteProduct.mockRejectedValueOnce(new Error('Database error'));
+
+            const result = await productService.deleteProduct(1);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Database error');
+        });
+    });
 });

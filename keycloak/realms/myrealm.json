@@ -14,6 +14,9 @@
     "users": [
         {
             "username": "admin",
+            "firstName": "ADMIN",
+            "lastName": "ADMIN",
+            "email": "admin@mail.com",
             "enabled": true,
             "emailVerified": true,
             "credentials": [
